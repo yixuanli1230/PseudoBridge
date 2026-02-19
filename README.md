@@ -13,100 +13,145 @@ These results demonstrate the effectiveness of explicit logical alignment via ps
 ![](fig/overview.png)
 The framework of PseudoBridge, which comprises three core components: pseudo-code generation, logic-invariant code style enhancement, and model training. Step 1: Synthesize initial pseudo-code using LLMs. Step 2: Assess the quality of the generated pseudo-code and refine it. Step 3: Leverage the refined high-quality pseudo-code to produce syntactically diverse yet functionally equivalent code variants. Step 4: Evaluate the augmented code for logical correctness and quality, performing necessary refinement. Step 5: Utilize the generated pseudo-code, diversified code variants, and corresponding query to jointly train the target model.
 
+---
 
-## Usage
+## 🏗️ Framework Overview
 
-### Requirements
-tokenizers==0.12.1
+The PseudoBridge pipeline consists of five critical steps:
 
-scikit-learn==1.1.2
+1. **Synthesis**: Generate initial pseudo-code from NL queries using LLMs.
+2. **Assessment**: Evaluate and refine pseudo-code quality via a "Gatekeeper" mechanism.
+3. **Augmentation**: Produce syntactically diverse but logically equivalent code variants.
+4. **Verification**: Ensure logical correctness and quality of augmented variants.
+5. **Alignment**: Jointly train the target model using (Query, Pseudo-Code, Code) triplets.
 
-tqdm==4.64.1
+---
 
-transformers==4.22.2
+## 📋 Requirements
 
-numpy==1.22.4
+Ensure your environment meets the following dependencies:
 
+```text
 torch==1.10.1
-
-
-## Datasets
-
-**Stage 1: Pseudo Code Generation**
-
-Generated using GPT-4o(2024-08-06). This dataset constructs corresponding pseudo-code from queries and code sourced from CodeXGLUE and Pytorrent. It encompasses six programming languages: **Python, Java, JavaScript, Go, Ruby, and PHP**. Details are available at `datasets/train/generated_datasets.jsonl`. You can run to generate the pseudo code.
+transformers==4.22.2
+tokenizers==0.12.1
+scikit-learn==1.1.2
+numpy==1.22.4
+tqdm==4.64.1
 ```
-python codeLAPSE/code/pseudo_code_gen.py
-``` 
-The following are the details of stage 1 train datasets.
 
-|  Language  |  Number  |  From  |
-|--------|--------|--------|
-| Python | 3,000 | [Pytorrent](https://github.com/gallexis/pytorrent) |
-| Python | 2,914 | [CodeXGLUE](https://github.com/microsoft/CodeXGLUE) |
-| Java | 5,086 | CodeXGLUE |
-| JavaScript | 5,000| CodeXGLUE |
-| Go | 1,000 | CodeXGLUE |
-| Ruby | 1,000 | CodeXGLUE |
-| PHP | 1,000 | CodeXGLUE |
+---
 
+## 📊 Datasets
 
+The framework is evaluated on 6 core languages from [CodeSearchNet](https://github.com/microsoft/CodeXGLUE) and tested for generalization on [Solidity](https://www.google.com/search?q=https://zenodo.org/records/4587089) and [XLCoST](https://github.com/reddy-lab-code-research/XLCoST).
 
-**Stage 2: Multi-Style Code Generation**
+| Language | Training Samples | Source |
+| --- | --- | --- |
+| Python | 5,914 | CodeSearchNet |
+| Java | 5,086 | CodeSearchNet |
+| JavaScript | 5,000 | CodeSearchNet |
+| Go | 1,000 | CodeSearchNet |
+| Ruby | 1,000 | CodeSearchNet |
+| PHP | 1,000 | CodeSearchNet |
 
-Generated using GPT-4o, based on the pseudo code from Stage 1. This stage produces four distinct stylistic variations of code for each (code, pseudo code, query) tuple in the dataset. These variations preserve logical invariance and functional consistency while altering only the coding style. Details are available at `datasets/train/generated_datasets.jsonl`.
+| Language | Testing Samples | Source |
+| --- | --- | --- |
+| Python | 22,176 | CodeSearchNet |
+| Java | 26,909 | CodeSearchNet |
+| JavaScript | 6,483 | CodeSearchNet |
+| Go | 14,291 | CodeSearchNet |
+| Ruby | 2,279 | CodeSearchNet |
+| PHP | 28,391 | CodeSearchNet |
+| C++ | 899 | XLCoST |
+| C# | 909 | XLCoST |
+| Solidity | 1,000 | Solidity |
+---
 
+## 🛠️ Methodology
 
+### 🔹 Stage 1: Pseudo-Code Generation
 
-## Baselines
+This stage constructs high-quality pseudo-code to bridge queries and source code.
 
-Sentencebert: https://huggingface.co/sentence-transformers/all-mpnet-base-v2
+* **Generator**: Drafts pseudo-code following strict formatting guidelines.
+* **Evaluator (Gatekeeper)**: Performs **Alignment Checks** (logical equivalence) and **Quality Scoring** (Correctness, Readability, Completeness, Conciseness, Maintainability).
+* **Refiner**: Iteratively improves output based on specific Evaluator feedback.
 
-DistilBert:
-https://huggingface.co/distilbert/distilbert-base-multilingual-cased
+**Run Generation:**
 
-RoBERTa: https://huggingface.co/FacebookAI/roberta-base
-
-CodeBert: https://huggingface.co/microsoft/codebert-base
-
-GraphCodeBert: https://huggingface.co/microsoft/graphcodebert-base
-
-CodeT5: https://huggingface.co/Salesforce/codet5-base
-
-CDCS: https://github.com/fewshotcdcs/CDCS
-
-UniXcode: https://huggingface.co/microsoft/unixcoder-base
-
-CoCoSoDa: https://huggingface.co/DeepSoftwareAnalytics/CoCoSoDa
-
-RAPID: https://github.com/GuodongFan/Rapid
-
-
-## Training
-To train models with CodeLAPSE, run 
-
+```bash
+# Export API key if using API mode
+export OPENAI_API_KEY="your_api_key"
+# Execute pipeline
+bash scr/pseudocode_gen/run.sh
 ```
-python CodeLAPSE/code/train_stage1.py
-``` 
 
-Based on the finetuned models of the Stage 1, run
+### 🔹 Stage 2: Multi-Style Code Generation
 
+We generate diverse Python variants for each logic triplet to ensure **logic-invariance**.
+
+* **Six-Dimensional Style Matrix**: Includes permutations of Programming Paradigms, Language Features, Syntactic Structures, Naming Conventions, Error Handling, and Memory Management.
+* **Logic-Invariant Loop**: Uses a shared model registry (vLLM) to generate and verify that augmented code remains functionally identical to the source.
+
+**Run Augmentation:**
+
+```bash
+bash scr/codevariant_gen/run.sh
 ```
-python CodeLAPSE/code/train_stage2.py
-``` 
 
+---
 
+## 🚀 Usage Guide
 
-## Evaluation
-To evaluate the models, run:
+### 1️⃣ Training Strategy
 
+PseudoBridge employs a two-stage alignment process. Configure `config.py` (e.g., `STAGE`, `DATA_PATH`) before starting.
+
+* **Phase 1 (NL ↔ Pseudo-Code)**: Build the logic bridge.
+```bash
+# Set STAGE = 1 in config.py
+python main.py
 ```
-python CodeLAPSE/code/evaluate.py
-``` 
-
-## License
-MIT License
 
 
-## Acknowledgements
-Our code is inspired by [Setence-transformers](https://github.com/UKPLab/sentence-transformers/tree/master), [Hugging Face](https://huggingface.co/)
+* **Phase 2 (Pseudo-Code ↔ PL)**: Fine-tune for semantic-logic alignment using multi-style variants.
+```bash
+# Set STAGE = 2 in config.py
+python main.py
+```
+
+
+*Note: The script is interactive; you can select specific models or high-quality labels (e.g., labels 3, 4) during execution.*
+
+### 2️⃣ Evaluation
+
+Evaluate performance using **MRR**, **Recall@k**, and **Avg Rank**.
+
+```bash
+python eval.py
+```
+
+**Interactive Workflow:**
+
+1. Select source (Base vs. Finetuned).
+2. Choose specific checkpoints/steps.
+3. The script automatically discovers all `.jsonl` test files and generates an **Excel Report** (`.xlsx`) and raw **JSON** logs.
+
+---
+
+## ⚖️ Baselines
+
+We compare PseudoBridge against various state-of-the-art encoders:
+
+* **General**: [SentenceBERT](https://huggingface.co/sentence-transformers/all-mpnet-base-v2), [DistilBERT](https://huggingface.co/distilbert/distilbert-base-multilingual-cased), [RoBERTa](https://huggingface.co/FacebookAI/roberta-base).
+* **Code-Specific**: [CodeBERT](https://huggingface.co/microsoft/codebert-base), [GraphCodeBERT](https://huggingface.co/microsoft/graphcodebert-base), [CodeT5](https://huggingface.co/Salesforce/codet5-base), [UniXcoder](https://huggingface.co/microsoft/unixcoder-base).
+* **Advanced**: [CDCS](https://github.com/fewshotcdcs/CDCS), [CoCoSoDa](https://huggingface.co/DeepSoftwareAnalytics/CoCoSoDa), [RAPID](https://github.com/GuodongFan/Rapid).
+
+---
+
+## 📄 License & Acknowledgements
+
+* **License**: This project is licensed under the MIT License.
+* **Acknowledgements**: This work is inspired by and builds upon [Sentence-Transformers](https://github.com/UKPLab/sentence-transformers) and [Hugging Face Transformers](https://huggingface.co/).
+
