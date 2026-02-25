@@ -19,11 +19,11 @@ The framework of PseudoBridge, which comprises three core components: pseudo-cod
 
 The PseudoBridge pipeline consists of five critical steps:
 
-1. **Synthesis**: Generate initial pseudo-code from NL queries using LLMs.
-2. **Assessment**: Evaluate and refine pseudo-code quality via a "Gatekeeper" mechanism.
-3. **Augmentation**: Produce syntactically diverse but logically equivalent code variants.
-4. **Verification**: Ensure logical correctness and quality of augmented variants.
-5. **Alignment**: Jointly train the target model using (Query, Pseudo-Code, Code) triplets.
+1. **Pseudo-code Generation**: Generate initial pseudo-code from NL queries using LLMs.
+2. **Evaluate and Refine Pseudo-code**: Evaluate and refine pseudo-code quality via a "Gatekeeper" mechanism.
+3. **Multi-style Code Generation**: Produce syntactically diverse but logically equivalent code variants.
+4. **Evaluate and Refine Code Variants**: Ensure logical correctness and quality of augmented variants.
+5. **Semantic and Logic Alignment**: Jointly train the target model using (Query, Pseudo-Code, Code) triplets.
 
 ---
 
@@ -68,6 +68,11 @@ The framework is evaluated on 6 core languages from [CodeSearchNet](https://gith
 | Solidity | 1,000 | Solidity |
 ---
 
+### 📂 Data Access
+- **Sample Data**: For quick training and testing, we provide 300 sampled instances for both Stage 1 and Stage 2 in `data/train_sampled/`.
+- **Test Samples**: Sampled test sets for all six languages (Go, Java, JavaScript, etc.) are available in the `data/test_sampled/` directory.
+- **Full Dataset**: The complete training and testing dataset can be downloaded from [https://huggingface.co/datasets/yixuan1230/PseudoBridge/].
+
 ## 🛠️ Methodology
 
 ### 🔹 Stage 1: Pseudo-Code Generation
@@ -75,7 +80,7 @@ The framework is evaluated on 6 core languages from [CodeSearchNet](https://gith
 This stage constructs high-quality pseudo-code to bridge queries and source code.
 
 * **Generator**: Drafts pseudo-code following strict formatting guidelines.
-* **Evaluator (Gatekeeper)**: Performs **Alignment Checks** (logical equivalence) and **Quality Scoring** (Correctness, Readability, Completeness, Conciseness, Maintainability).
+* **Evaluator**: Performs **Alignment Checks** (logical equivalence) and **Quality Scoring** (Correctness, Readability, Completeness, Conciseness, Maintainability).
 * **Refiner**: Iteratively improves output based on specific Evaluator feedback.
 
 **Run Generation:**
